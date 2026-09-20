@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#ede9dc" />
+    <meta name="description" content="Lernkarten für unregelmäßige englische Verben." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <title>verb.cards · Lernkarten</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+      :root {
+        --paper: #ede9dc;
+        --card: #f7f4e9;
+        --ink: #121713;
+        --muted: #686f67;
+        --rule: #b8b9a9;
+        --acid: #b9ed51;
+        --coral: #e8765e;
+        --shadow: #c6c3b5;
+        --green: #315b2d;
+        --red: #a84231;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        overflow: hidden;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+      }
+
+      button { font: inherit; }
+      button { cursor: pointer; }
+      button:focus-visible { outline: 2px solid var(--coral); outline-offset: 3px; }
+
+      .app {
+        width: min(760px, 100%);
+        height: 100dvh;
+        min-height: 100svh;
+        margin: 0 auto;
+        padding: max(14px, env(safe-area-inset-top)) clamp(16px, 4vw, 36px) max(12px, env(safe-area-inset-bottom));
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: clamp(8px, 2vh, 16px);
+        background:
+          radial-gradient(circle at 86% 4%, rgba(185, 237, 81, 0.28), transparent 25%),
+          var(--paper);
+      }
+
+      .topbar,
+      .runline,
+      .bottomline,
+      .card-head,
+      .card-actions,
+      .finish-head,
+      .finish-stats {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .topbar {
+        min-height: 38px;
+        border-bottom: 1px solid var(--ink);
+        animation: appear 420ms ease both;
+      }
+
+      .wordmark {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+      }
+
+      .wordmark-index {
+        display: grid;
+        place-items: center;
+        width: 25px;
+        height: 25px;
+        background: var(--ink);
+        color: var(--acid);
+        font-family: 'DM Mono', monospace;
+        font-size: 11px;
+        letter-spacing: 0;
+      }
+
+      .topbar-note,
+      .mono,
+      .overline,
+      .field-label,
+      .mode-button,
+      .run-size,
+      .card-head,
+      .bottomline,
+      .feedback,
+      .finish-score-label {
+        font-family: 'DM Mono', monospace;
+      }
+
+      .topbar-note {
+        color: var(--muted);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      main {
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        animation: appear 520ms 80ms ease both;
+      }
+
+      .runline {
+        flex: 0 0 auto;
+        min-height: 55px;
+        padding: 4px 0 8px;
+        border-bottom: 1px solid var(--rule);
+        gap: 12px;
+      }
+
+      .run-info { display: flex; align-items: center; gap: 10px; }
+
+      .overline {
+        margin: 0;
+        color: var(--muted);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .overline strong { color: var(--ink); font-weight: 500; }
+
+      .run-sizes { display: flex; align-items: center; gap: 2px; }
+
+      .run-size {
+        min-width: 32px;
+        padding: 5px 6px;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        background: transparent;
+        color: var(--muted);
+        font-size: 11px;
+        transition: color 150ms ease, border-color 150ms ease;
+      }
+
+      .run-size:hover,
+      .run-size.active { border-color: var(--ink); color: var(--ink); }
+
+      .score {
+        display: flex;
+        align-items: baseline;
+        gap: 5px;
+        white-space: nowrap;
+      }
+
+      .score strong {
+        font-size: clamp(25px, 7vw, 35px);
+        font-weight: 600;
+        letter-spacing: -0.08em;
+        line-height: 1;
+      }
+
+      .score span:not(strong) { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 13px; }
+      .score small { margin-left: 3px; color: var(--muted); font-size: 10px; text-transform: uppercase; }
+
+      .card-stage {
+        position: relative;
+        min-height: 0;
+        flex: 1 1 auto;
+        display: grid;
+        place-items: stretch;
+        padding: clamp(10px, 2.5vh, 22px) 0;
+      }
+
+      .learning-card,
+      .finish-card {
+        min-height: 0;
+        width: 100%;
+        border: 1px solid var(--ink);
+        background: var(--card);
+        box-shadow: 8px 8px 0 var(--shadow);
+      }
+
+      .learning-card {
+        display: flex;
+        flex-direction: column;
+        padding: clamp(16px, 3.3vw, 29px);
+        animation: card-in 340ms ease both;
+      }
+
+      .learning-card[hidden] { display: none; }
+
+      .learning-card.swap { animation: card-swap 300ms ease both; }
+
+      .card-head {
+        flex: 0 0 auto;
+        color: var(--muted);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .card-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--ink);
+      }
+
+      .card-state::before {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--acid);
+        content: '';
+      }
+
+      .card-state.correct::before { background: var(--green); }
+      .card-state.wrong::before { background: var(--coral); }
+
+      .card-copy {
+        min-height: 0;
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 12px 0 16px;
+      }
+
+      .direction-label {
+        width: fit-content;
+        margin: 0 0 clamp(8px, 1.8vh, 17px);
+        padding-bottom: 5px;
+        border-bottom: 2px solid var(--acid);
+        color: var(--muted);
+        font-family: 'DM Mono', monospace;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .prompt {
+        max-width: 100%;
+        margin: 0;
+        font-size: clamp(38px, 10vw, 92px);
+        font-weight: 600;
+        letter-spacing: -0.075em;
+        line-height: 0.93;
+        overflow-wrap: anywhere;
+        text-wrap: balance;
+      }
+
+      .prompt.long { font-size: clamp(26px, 7vw, 54px); letter-spacing: -0.065em; line-height: 0.98; }
+
+      .flashcard-button {
+        position: relative;
+        min-height: 0;
+        flex: 1 1 auto;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--ink);
+        perspective: 1400px;
+        text-align: left;
+      }
+
+      .flashcard-scene {
+        position: relative;
+        display: block;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        transform-style: preserve-3d;
+        transition: transform 520ms cubic-bezier(0.2, 0.72, 0.2, 1);
+      }
+
+      .learning-card.is-flipped .flashcard-scene { transform: rotateY(180deg); }
+
+      .flashcard-face {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        padding: 0;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+      }
+
+      .flashcard-back {
+        transform: rotateY(180deg);
+      }
+
+      .flashcard-face .card-copy { flex: 1 1 auto; }
+
+      .flip-hint {
+        flex: 0 0 auto;
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid var(--rule);
+        color: var(--muted);
+        font-family: 'DM Mono', monospace;
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .back-copy {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: clamp(15px, 3vh, 28px);
+      }
+
+      .back-answer {
+        display: block;
+        max-width: 100%;
+        font-size: clamp(30px, 8vw, 62px);
+        font-weight: 600;
+        letter-spacing: -0.07em;
+        line-height: 0.96;
+        overflow-wrap: anywhere;
+      }
+
+      .back-answer.long { font-size: clamp(23px, 6vw, 46px); line-height: 1; }
+
+      .back-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        padding-top: 16px;
+        border-top: 1px solid var(--rule);
+      }
+
+      .back-entry { min-width: 0; }
+      .back-german { grid-column: 1 / -1; }
+      .back-entry small {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--muted);
+        font-family: 'DM Mono', monospace;
+        font-size: 9px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .back-entry strong {
+        display: block;
+        font-size: clamp(17px, 4.5vw, 28px);
+        font-weight: 600;
+        letter-spacing: -0.04em;
+        line-height: 1.05;
+        overflow-wrap: anywhere;
+      }
+
+      .card-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        flex: 0 0 auto;
+        gap: 10px;
+        padding-top: clamp(12px, 2.2vh, 20px);
+        border-top: 1px solid var(--rule);
+      }
+
+      .card-actions button,
+      .new-run-button,
+      .direction-button {
+        min-height: 42px;
+        border: 0;
+        border-radius: 0;
+        transition: transform 150ms ease, background 150ms ease, color 150ms ease;
+      }
+
+      .again-button {
+        background: transparent;
+        border: 1px solid var(--ink) !important;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .again-button:hover { background: #e4e0d2; transform: translateY(-2px); }
+
+      .right-button,
+      .new-run-button {
+        background: var(--ink);
+        color: var(--card);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .right-button:hover,
+      .new-run-button:hover { background: #2f3e31; transform: translateY(-2px); }
+
+      .card-actions[hidden],
+      .finish-card[hidden],
+      .learning-card[hidden] { display: none; }
+
+      .bottomline {
+        min-height: 24px;
+        color: var(--muted);
+        font-size: 9px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .bottomline span:last-child { text-align: right; }
+
+      .direction-button {
+        padding: 4px 0;
+        border-bottom: 1px solid var(--ink);
+        background: transparent;
+        color: var(--ink);
+        font-family: 'DM Mono', monospace;
+        font-size: 10px;
+      }
+
+      .direction-button:hover { color: var(--coral); border-color: var(--coral); }
+
+      .finish-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: clamp(20px, 5vw, 44px);
+        animation: card-in 340ms ease both;
+      }
+
+      .finish-head { align-items: start; }
+      .finish-kicker { margin: 0; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; }
+      .finish-mark { color: var(--coral); font-size: 32px; line-height: 1; }
+
+      .finish-card h1 {
+        max-width: 500px;
+        margin: 14px 0 0;
+        font-size: clamp(42px, 12vw, 84px);
+        font-weight: 600;
+        letter-spacing: -0.08em;
+        line-height: 0.9;
+      }
+
+      .finish-card h1 span { color: var(--coral); }
+
+      .finish-score-label { margin: 16px 0 0; color: var(--muted); font-size: 11px; }
+
+      .finish-stats {
+        justify-content: start;
+        gap: 30px;
+        padding: 18px 0;
+        border-top: 1px solid var(--rule);
+        border-bottom: 1px solid var(--rule);
+      }
+
+      .finish-stat { display: grid; gap: 4px; }
+      .finish-stat strong { font-size: 24px; letter-spacing: -0.06em; }
+      .finish-stat span { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }
+
+      .finish-footer { display: flex; align-items: end; justify-content: space-between; gap: 16px; }
+      .finish-footer p { max-width: 220px; margin: 0; color: var(--muted); font-size: 12px; }
+
+      @keyframes appear { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes card-in { from { opacity: 0; transform: translateX(12px) rotate(0.4deg); } to { opacity: 1; transform: translateX(0) rotate(0); } }
+      @keyframes card-swap { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+
+      @media (max-width: 480px) {
+        .topbar-note { max-width: 105px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .prompt { font-size: clamp(38px, 13vw, 66px); }
+        .prompt.long { font-size: clamp(25px, 8.2vw, 48px); }
+      }
+
+      @media (max-height: 700px) {
+        .app { gap: 5px; }
+        .runline { min-height: 45px; padding-bottom: 5px; }
+        .card-stage { padding: 7px 0 11px; }
+        .learning-card { padding: 13px 16px; }
+        .card-copy { padding: 7px 0 10px; }
+        .card-actions { padding-top: 10px; }
+        .bottomline { min-height: 19px; }
+      }
+
+      @media (min-width: 700px) {
+        .app { padding-left: 0; padding-right: 0; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="wordmark"><span class="wordmark-index">V</span><span>verb.cards</span></div>
+        <span class="topbar-note">unregelmäßige verben / 01</span>
+      </header>
+
+      <main>
+        <section class="runline" aria-label="Lauf und Punktestand">
+          <div class="run-info">
+            <p class="overline">lauf <strong id="run-number">01</strong></p>
+            <div class="run-sizes" role="group" aria-label="Anzahl der Karten pro Lauf">
+              <button class="run-size" type="button" data-length="10">10</button>
+              <button class="run-size active" type="button" data-length="20">20</button>
+              <button class="run-size" type="button" data-length="69">alle</button>
+            </div>
+          </div>
+          <div class="score" aria-live="polite"><strong id="score-correct">0</strong><span>/</span><span id="score-total">20</span><small>richtig</small></div>
+        </section>
+
+        <section class="card-stage" aria-live="polite">
+          <article class="learning-card" id="learning-card">
+            <button class="flashcard-button" id="flashcard" type="button" aria-label="Lernkarte umdrehen" aria-pressed="false">
+              <span class="flashcard-scene">
+                <span class="flashcard-face flashcard-front">
+                  <span class="card-head">
+                    <span id="card-counter">01 / 20</span>
+                    <span class="card-state" id="card-state">neu</span>
+                  </span>
+                  <span class="card-copy">
+                    <span class="direction-label" id="direction-label">deutsch</span>
+                    <span class="prompt" id="prompt">sein</span>
+                  </span>
+                  <span class="flip-hint">antippen · umdrehen</span>
+                </span>
+
+                <span class="flashcard-face flashcard-back">
+                  <span class="card-head">
+                    <span>lösung</span>
+                    <span class="card-state" id="back-state">rückseite</span>
+                  </span>
+                  <span class="back-copy">
+                    <span class="back-answer" id="back-answer">was, were</span>
+                    <span class="back-grid">
+                      <span class="back-entry"><small>infinitive</small><strong id="back-infinitive">be</strong></span>
+                      <span class="back-entry"><small>simple past</small><strong id="back-past">was, were</strong></span>
+                      <span class="back-entry back-german"><small>deutsch</small><strong id="back-german">sein</strong></span>
+                    </span>
+                  </span>
+                  <span class="flip-hint">antippen · zurück</span>
+                </span>
+              </span>
+            </button>
+            <div class="card-actions" id="card-actions" hidden>
+              <button class="again-button" id="again-button" type="button">nochmal</button>
+              <button class="right-button" id="right-button" type="button">richtig ↗</button>
+            </div>
+          </article>
+
+          <article class="finish-card" id="finish-card" hidden>
+            <div>
+              <div class="finish-head">
+                <p class="finish-kicker">lauf beendet</p>
+                <span class="finish-mark">✳</span>
+              </div>
+              <h1><span id="finish-correct">0</span> von <span id="finish-total">20</span><br />richtig.</h1>
+              <p class="finish-score-label" id="finish-message">Neue Reihenfolge bereit.</p>
+            </div>
+            <div class="finish-stats">
+              <div class="finish-stat"><strong id="finish-percent">0%</strong><span>trefferquote</span></div>
+              <div class="finish-stat"><strong id="finish-best">0 / 20</strong><span>beste runde</span></div>
+              <div class="finish-stat"><strong id="finish-runs">0</strong><span>läufe</span></div>
+            </div>
+            <div class="finish-footer">
+              <p>Die Karten werden für den nächsten Lauf neu gemischt.</p>
+              <button class="new-run-button" id="new-run-button" type="button">neu mischen ↗</button>
+            </div>
+          </article>
+        </section>
+
+        <div class="bottomline">
+          <span><span id="direction-hint">DEUTSCH</span> · zufall an</span>
+          <button class="direction-button" id="direction-button" type="button">richtung wechseln</button>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const VERBS = [
+        { infinitive: 'be', simplePast: 'was, were', german: 'sein' },
+        { infinitive: 'become', simplePast: 'became', german: 'werden' },
+        { infinitive: 'begin', simplePast: 'began', german: 'beginnen; anfangen' },
+        { infinitive: 'bring', simplePast: 'brought', german: 'bringen; mitbringen' },
+        { infinitive: 'build', simplePast: 'built', german: 'bauen' },
+        { infinitive: 'buy', simplePast: 'bought', german: 'kaufen' },
+        { infinitive: 'choose', simplePast: 'chose', german: 'auswählen; wählen' },
+        { infinitive: 'come', simplePast: 'came', german: 'kommen' },
+        { infinitive: 'cut', simplePast: 'cut', german: 'schneiden' },
+        { infinitive: 'do', simplePast: 'did', german: 'machen; tun' },
+        { infinitive: 'draw', simplePast: 'drew', german: 'zeichnen' },
+        { infinitive: 'drink', simplePast: 'drank', german: 'trinken' },
+        { infinitive: 'drive', simplePast: 'drove', german: 'fahren' },
+        { infinitive: 'eat', simplePast: 'ate', german: 'essen' },
+        { infinitive: 'fall', simplePast: 'fell', german: 'fallen' },
+        { infinitive: 'feed', simplePast: 'fed', german: 'füttern' },
+        { infinitive: 'feel', simplePast: 'felt', german: '(sich) fühlen' },
+        { infinitive: 'fight', simplePast: 'fought', german: 'kämpfen; (sich) streiten' },
+        { infinitive: 'find', simplePast: 'found', german: 'finden; herausfinden' },
+        { infinitive: 'forget', simplePast: 'forgot', german: 'vergessen' },
+        { infinitive: 'freeze', simplePast: 'froze', german: 'einfrieren; frieren' },
+        { infinitive: 'get', simplePast: 'got', german: 'bekommen; werden' },
+        { infinitive: 'get up', simplePast: 'got up', german: 'aufstehen' },
+        { infinitive: 'give', simplePast: 'gave', german: 'geben' },
+        { infinitive: 'go', simplePast: 'went', german: 'gehen; fahren' },
+        { infinitive: 'grow', simplePast: 'grew', german: 'wachsen; anbauen; züchten' },
+        { infinitive: 'hang out (with)', simplePast: 'hung out (with)', german: 'rumhängen (mit); sich treffen (mit); sich herumtreiben (mit)' },
+        { infinitive: 'have', simplePast: 'had', german: 'haben; essen' },
+        { infinitive: 'hear', simplePast: 'heard', german: 'hören' },
+        { infinitive: 'hold', simplePast: 'held', german: 'halten; festhalten; tragen' },
+        { infinitive: 'hurt', simplePast: 'hurt', german: 'weh tun; verletzen' },
+        { infinitive: 'keep', simplePast: 'kept', german: 'behalten; halten; aufbewahren' },
+        { infinitive: 'know', simplePast: 'knew', german: 'wissen; kennen' },
+        { infinitive: 'learn', simplePast: 'learnt, learned', german: 'lernen' },
+        { infinitive: 'leave', simplePast: 'left', german: 'abfahren; verlassen; lassen' },
+        { infinitive: 'let', simplePast: 'let', german: 'lassen' },
+        { infinitive: 'make', simplePast: 'made', german: 'machen; tun; bilden' },
+        { infinitive: 'mean', simplePast: 'meant', german: 'bedeuten; meinen' },
+        { infinitive: 'meet', simplePast: 'met', german: 'treffen; kennenlernen' },
+        { infinitive: 'pay', simplePast: 'paid', german: 'bezahlen' },
+        { infinitive: 'put', simplePast: 'put', german: 'stellen; setzen; legen' },
+        { infinitive: 'read', simplePast: 'read', german: 'lesen' },
+        { infinitive: 'ride', simplePast: 'rode', german: 'fahren; reiten' },
+        { infinitive: 'run', simplePast: 'ran', german: 'rennen; laufen' },
+        { infinitive: 'say', simplePast: 'said', german: 'sagen; sprechen' },
+        { infinitive: 'see', simplePast: 'saw', german: 'sehen' },
+        { infinitive: 'sell', simplePast: 'sold', german: 'verkaufen' },
+        { infinitive: 'send', simplePast: 'sent', german: 'schicken; senden' },
+        { infinitive: 'shake', simplePast: 'shook', german: 'schütteln' },
+        { infinitive: 'show', simplePast: 'showed', german: 'zeigen' },
+        { infinitive: 'sing', simplePast: 'sang', german: 'singen' },
+        { infinitive: 'sit down', simplePast: 'sat down', german: 'sich hinsetzen; sich setzen' },
+        { infinitive: 'sleep', simplePast: 'slept', german: 'schlafen' },
+        { infinitive: 'smell', simplePast: 'smelt, smelled', german: 'riechen' },
+        { infinitive: 'speak', simplePast: 'spoke', german: 'sprechen' },
+        { infinitive: 'spell', simplePast: 'spelt, spelled', german: 'buchstabieren' },
+        { infinitive: 'spend', simplePast: 'spent', german: '(Zeit) verbringen; (Geld) ausgeben' },
+        { infinitive: 'stand', simplePast: 'stood', german: 'stehen' },
+        { infinitive: 'stick', simplePast: 'stuck', german: 'kleben' },
+        { infinitive: 'swim', simplePast: 'swam', german: 'schwimmen' },
+        { infinitive: 'take', simplePast: 'took', german: 'nehmen; mitnehmen; dauern' },
+        { infinitive: 'tell', simplePast: 'told', german: 'sagen; erzählen' },
+        { infinitive: 'think', simplePast: 'thought', german: 'finden; denken; glauben' },
+        { infinitive: 'throw', simplePast: 'threw', german: 'werfen' },
+        { infinitive: 'understand', simplePast: 'understood', german: 'verstehen' },
+        { infinitive: 'wake up', simplePast: 'woke up', german: 'aufwachen; wecken' },
+        { infinitive: 'wear', simplePast: 'wore', german: '(Kleidung) tragen; anhaben' },
+        { infinitive: 'win', simplePast: 'won', german: 'gewinnen; siegen' },
+        { infinitive: 'write', simplePast: 'wrote', german: 'schreiben' }
+      ];
+
+      const STORAGE_KEY = 'verb-cards-run-v2';
+      const DIRECTIONS = ['german', 'present', 'past', 'mix'];
+      const DIRECTION_LABELS = { present: 'GEGENWART', past: 'VERGANGENHEIT', german: 'DEUTSCH', mix: 'GEMISCHT' };
+      const $ = (selector) => document.querySelector(selector);
+      const $$ = (selector) => [...document.querySelectorAll(selector)];
+
+      const state = {
+        length: 20,
+        direction: 'german',
+        queue: [],
+        position: 0,
+        current: null,
+        currentMode: 'present',
+        locked: false,
+        correct: 0,
+        wrong: 0,
+        progress: loadProgress()
+      };
+
+      function loadProgress() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          return {
+            runs: Number.isFinite(saved?.runs) ? saved.runs : 0,
+            best: Number.isFinite(saved?.best) ? saved.best : 0,
+            bestLength: Number.isFinite(saved?.bestLength) ? saved.bestLength : 20
+          };
+        } catch (error) {
+          return { runs: 0, best: 0, bestLength: 20 };
+        }
+      }
+
+      function saveProgress() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.progress)); }
+
+      function shuffle(items) {
+        const copy = [...items];
+        for (let index = copy.length - 1; index > 0; index -= 1) {
+          const randomIndex = Math.floor(Math.random() * (index + 1));
+          [copy[index], copy[randomIndex]] = [copy[randomIndex], copy[index]];
+        }
+        return copy;
+      }
+
+      function uniqueVerbIndexes() {
+        const seen = new Set();
+        return VERBS.reduce((indexes, verb, index) => {
+          const key = verb.infinitive.trim().toLocaleLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            indexes.push(index);
+          }
+          return indexes;
+        }, []);
+      }
+
+      function modeForCard() {
+        if (state.direction !== 'mix') return state.direction;
+        return DIRECTIONS[Math.floor(Math.random() * 3)];
+      }
+
+      function startRun(length = state.length) {
+        state.queue = shuffle(uniqueVerbIndexes()).slice(0, length);
+        state.length = state.queue.length;
+        state.position = 0;
+        state.correct = 0;
+        state.wrong = 0;
+        state.locked = false;
+        $('#finish-card').hidden = true;
+        $('#learning-card').hidden = false;
+        $$('.run-size').forEach((button) => button.classList.toggle('active', Number(button.dataset.length) === length));
+        renderCard(false);
+        updateRunline();
+      }
+
+      function updateRunline() {
+        $('#run-number').textContent = String(state.progress.runs + 1).padStart(2, '0');
+        $('#score-correct').textContent = state.correct;
+        $('#score-total').textContent = state.length;
+      }
+
+      function setFlipped(flipped) {
+        $('#learning-card').classList.toggle('is-flipped', flipped);
+        $('#flashcard').setAttribute('aria-pressed', String(flipped));
+        $('#card-actions').hidden = !flipped;
+      }
+
+      function renderCard(animate = true) {
+        state.current = VERBS[state.queue[state.position]];
+        state.currentMode = modeForCard();
+        state.locked = false;
+        const mode = state.currentMode;
+        const isPresent = mode === 'present';
+        const isPast = mode === 'past';
+        const prompt = isPresent ? state.current.infinitive : isPast ? state.current.simplePast : state.current.german;
+        const answer = isPresent ? state.current.simplePast : state.current.infinitive;
+        const card = $('#learning-card');
+        card.classList.remove('swap');
+        setFlipped(false);
+        if (animate) { void card.offsetWidth; card.classList.add('swap'); }
+
+        $('#card-counter').textContent = `${String(state.position + 1).padStart(2, '0')} / ${state.length}`;
+        $('#card-state').textContent = 'neu';
+        $('#card-state').className = 'card-state';
+        $('#back-state').textContent = 'rückseite';
+        $('#back-state').className = 'card-state';
+        $('#direction-label').textContent = isPresent ? 'gegenwart · infinitive' : isPast ? 'vergangenheit · simple past' : 'deutsch';
+        $('#prompt').textContent = prompt;
+        $('#prompt').classList.toggle('long', prompt.length > 25);
+        $('#back-answer').textContent = answer;
+        $('#back-answer').classList.toggle('long', answer.length > 22);
+        $('#back-infinitive').textContent = state.current.infinitive;
+        $('#back-past').textContent = state.current.simplePast;
+        $('#back-german').textContent = state.current.german;
+        $('#back-state').textContent = isPresent ? 'vergangenheit' : isPast ? 'gegenwart' : 'englisch';
+        $('#back-state').className = 'card-state';
+        updateRunline();
+      }
+
+      function flipCard() {
+        if (state.locked) return;
+        setFlipped(!$('#learning-card').classList.contains('is-flipped'));
+      }
+
+      function rateCard(isCorrect) {
+        if (state.locked) return;
+        state.locked = true;
+        if (isCorrect) state.correct += 1;
+        else state.wrong += 1;
+        updateRunline();
+        nextCard();
+      }
+
+      function nextCard() {
+        if (state.position + 1 >= state.length) { finishRun(); return; }
+        state.position += 1;
+        renderCard(true);
+      }
+
+      function finishRun() {
+        const isFirstRun = state.progress.runs === 0;
+        state.progress.runs += 1;
+        const currentRate = state.correct / state.length;
+        const bestRate = state.progress.best / state.progress.bestLength;
+        if (isFirstRun || currentRate > bestRate || (currentRate === bestRate && state.correct > state.progress.best)) {
+          state.progress.best = state.correct;
+          state.progress.bestLength = state.length;
+        }
+        saveProgress();
+        $('#learning-card').hidden = true;
+        $('#finish-card').hidden = false;
+        $('#finish-correct').textContent = state.correct;
+        $('#finish-total').textContent = state.length;
+        $('#finish-percent').textContent = `${Math.round((state.correct / state.length) * 100)}%`;
+        $('#finish-best').textContent = `${state.progress.best} / ${state.progress.bestLength}`;
+        $('#finish-runs').textContent = state.progress.runs;
+        $('#finish-message').textContent = state.correct === state.length ? 'komplett sauber · neue reihenfolge bereit.' : 'runde gespeichert · die fehler kommen nicht verloren.';
+        updateRunline();
+      }
+
+      function changeDirection() {
+        const currentIndex = DIRECTIONS.indexOf(state.direction);
+        state.direction = DIRECTIONS[(currentIndex + 1) % DIRECTIONS.length];
+        $('#direction-hint').textContent = DIRECTION_LABELS[state.direction];
+        if (!$('#learning-card').hidden) renderCard(true);
+      }
+
+      $('#flashcard').addEventListener('click', flipCard);
+      $('#again-button').addEventListener('click', () => rateCard(false));
+      $('#right-button').addEventListener('click', () => rateCard(true));
+      $('#new-run-button').addEventListener('click', () => startRun(state.length));
+      $('#direction-button').addEventListener('click', changeDirection);
+      $$('.run-size').forEach((button) => button.addEventListener('click', () => startRun(Number(button.dataset.length))));
+
+      document.addEventListener('keydown', (event) => {
+        if ((event.key === 'Enter' || event.key === ' ') && event.target === document.body) {
+          event.preventDefault();
+          flipCard();
+        }
+      });
+
+      startRun(20);
+    </script>
+  </body>
+</html>
