@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <meta name="theme-color" content="#ede9dc" />
     <meta name="description" content="Lernkarten für unregelmäßige englische Verben." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -125,6 +128,9 @@
         padding: 4px 0 8px;
         border-bottom: 1px solid var(--rule);
         gap: 12px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px 12px;
       }
 
       .run-info { display: flex; align-items: center; gap: 10px; }
@@ -140,6 +146,34 @@
       .overline strong { color: var(--ink); font-weight: 500; }
 
       .run-sizes { display: flex; align-items: center; gap: 2px; }
+
+      .set-picker {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-top: 7px;
+        border-top: 1px solid var(--rule);
+      }
+
+      .set-picker span {
+        color: var(--muted);
+        font-family: 'DM Mono', monospace;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .set-picker strong {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        color: var(--ink);
+        font-family: 'DM Mono', monospace;
+        font-size: 10px;
+        font-weight: 500;
+        text-align: right;
+      }
 
       .run-size {
         min-width: 32px;
@@ -191,6 +225,7 @@
       }
 
       .learning-card {
+        position: relative;
         display: flex;
         flex-direction: column;
         padding: clamp(16px, 3.3vw, 29px);
@@ -203,11 +238,35 @@
 
       .card-head {
         flex: 0 0 auto;
+        padding-right: 42px;
         color: var(--muted);
         font-size: 10px;
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }
+
+      .speak-button {
+        position: absolute;
+        top: clamp(13px, 2.5vw, 22px);
+        right: clamp(13px, 2.5vw, 22px);
+        z-index: 2;
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        border: 1px solid var(--rule);
+        border-radius: 50%;
+        background: transparent;
+        color: var(--ink);
+        font-size: 15px;
+        line-height: 1;
+        transition: transform 150ms ease, border-color 150ms ease, color 150ms ease;
+      }
+
+      .speak-button:hover { border-color: var(--coral); color: var(--coral); transform: translateY(-2px); }
+      .speak-button:disabled { cursor: not-allowed; opacity: 0.45; }
+      .speak-button[hidden] { display: none; }
 
       .card-state {
         display: inline-flex;
@@ -261,6 +320,10 @@
 
       .prompt.long { font-size: clamp(26px, 7vw, 54px); letter-spacing: -0.065em; line-height: 0.98; }
 
+      .back-entry strong.spoken-word {
+        background: linear-gradient(to top, rgba(185, 237, 81, 0.78) 0 34%, transparent 34%);
+      }
+
       .flashcard-button {
         position: relative;
         min-height: 0;
@@ -272,6 +335,7 @@
         color: var(--ink);
         perspective: 1400px;
         text-align: left;
+        cursor: pointer;
       }
 
       .flashcard-scene {
@@ -431,10 +495,17 @@
       .finish-card {
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
+        justify-content: flex-start;
+        gap: clamp(12px, 2.5vh, 24px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
         padding: clamp(20px, 5vw, 44px);
         animation: card-in 340ms ease both;
       }
+
+      .finish-card > div:first-child,
+      .finish-stats,
+      .finish-footer { flex: 0 0 auto; }
 
       .finish-head { align-items: start; }
       .finish-kicker { margin: 0; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; }
@@ -465,8 +536,101 @@
       .finish-stat strong { font-size: 24px; letter-spacing: -0.06em; }
       .finish-stat span { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }
 
-      .finish-footer { display: flex; align-items: end; justify-content: space-between; gap: 16px; }
+      .mistake-panel {
+        display: flex;
+        flex: 0 0 auto;
+        flex-direction: column;
+        min-height: 0;
+        padding: 13px 0;
+        border-top: 1px solid var(--rule);
+        border-bottom: 1px solid var(--rule);
+      }
+
+      .mistake-panel[hidden] { display: none; }
+
+      .mistake-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+
+      .mistake-head p {
+        margin: 0;
+        color: var(--muted);
+        font-family: 'DM Mono', monospace;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .mistake-head span {
+        color: var(--coral);
+        font-family: 'DM Mono', monospace;
+        font-size: 10px;
+      }
+
+      .mistake-list {
+        min-height: 96px;
+        flex: 0 0 auto;
+        display: grid;
+        max-height: clamp(96px, 23vh, 230px);
+        gap: 7px;
+        overflow-y: auto;
+      }
+
+      .mistake-item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 0;
+        border-top: 1px solid rgba(184, 185, 169, 0.55);
+      }
+
+      .mistake-item:first-child { border-top: 0; }
+
+      .mistake-word {
+        min-width: 0;
+        display: grid;
+        gap: 3px;
+      }
+
+      .mistake-word strong {
+        overflow-wrap: anywhere;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .mistake-word span {
+        overflow-wrap: anywhere;
+        color: var(--muted);
+        font-family: 'DM Mono', monospace;
+        font-size: 9px;
+      }
+
+      .mini-speak {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: 1px solid var(--rule);
+        border-radius: 50%;
+        background: transparent;
+        font-size: 13px;
+      }
+
+      .mini-speak:hover { border-color: var(--coral); color: var(--coral); }
+
+      .finish-footer { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-top: auto; }
       .finish-footer p { max-width: 220px; margin: 0; color: var(--muted); font-size: 12px; }
+
+      .finish-actions { display: grid; flex: 0 0 clamp(180px, 28%, 250px); gap: 7px; min-width: 0; }
+      .finish-actions button { width: 100%; }
+      .review-button { background: var(--coral); color: var(--ink); font-size: 11px; font-weight: 700; }
+      .review-button:hover { background: #ef907b; transform: translateY(-2px); }
 
       @keyframes appear { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes card-in { from { opacity: 0; transform: translateX(12px) rotate(0.4deg); } to { opacity: 1; transform: translateX(0) rotate(0); } }
@@ -476,6 +640,9 @@
         .topbar-note { max-width: 105px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .prompt { font-size: clamp(38px, 13vw, 66px); }
         .prompt.long { font-size: clamp(25px, 8.2vw, 48px); }
+        .finish-footer { align-items: stretch; flex-direction: column; }
+        .finish-footer p { max-width: none; }
+        .finish-actions { width: 100%; flex-basis: auto; }
       }
 
       @media (max-height: 700px) {
@@ -511,15 +678,20 @@
             <div class="run-sizes" role="group" aria-label="Anzahl der Karten pro Lauf">
               <button class="run-size" type="button" data-length="10">10</button>
               <button class="run-size active" type="button" data-length="20">20</button>
-              <button class="run-size" type="button" data-length="69">alle</button>
+              <button class="run-size" type="button" data-length="all">alle</button>
             </div>
           </div>
           <div class="score" aria-live="polite"><strong id="score-correct">0</strong><span>/</span><span id="score-total">20</span><small>richtig</small></div>
+          <div class="set-picker">
+            <span>vokabelset</span>
+            <strong>kapitel G · seiten 215–217 · 69 vokabeln</strong>
+          </div>
         </section>
 
         <section class="card-stage" aria-live="polite">
           <article class="learning-card" id="learning-card">
-            <button class="flashcard-button" id="flashcard" type="button" aria-label="Lernkarte umdrehen" aria-pressed="false">
+            <button class="speak-button" id="speak-button" type="button" aria-label="Englische Vokabel vorlesen" title="Englische Vokabel vorlesen" hidden>🔊</button>
+            <div class="flashcard-button" id="flashcard" role="button" tabindex="0" aria-label="Lernkarte umdrehen" aria-pressed="false">
               <span class="flashcard-scene">
                 <span class="flashcard-face flashcard-front">
                   <span class="card-head">
@@ -549,7 +721,7 @@
                   <span class="flip-hint">antippen · zurück</span>
                 </span>
               </span>
-            </button>
+            </div>
             <div class="card-actions" id="card-actions" hidden>
               <button class="again-button" id="again-button" type="button">nochmal</button>
               <button class="right-button" id="right-button" type="button">richtig ↗</button>
@@ -570,9 +742,19 @@
               <div class="finish-stat"><strong id="finish-best">0 / 20</strong><span>beste runde</span></div>
               <div class="finish-stat"><strong id="finish-runs">0</strong><span>läufe</span></div>
             </div>
+            <section class="mistake-panel" id="mistake-panel" hidden aria-label="Problemvokabeln">
+              <div class="mistake-head">
+                <p>nacharbeiten</p>
+                <span id="mistake-count">0 fehler</span>
+              </div>
+              <div class="mistake-list" id="mistake-list"></div>
+            </section>
             <div class="finish-footer">
-              <p>Die Karten werden für den nächsten Lauf neu gemischt.</p>
-              <button class="new-run-button" id="new-run-button" type="button">neu mischen ↗</button>
+              <p id="finish-footer-text">Die Karten werden für den nächsten Lauf neu gemischt.</p>
+              <div class="finish-actions">
+                <button class="review-button" id="review-button" type="button" hidden>fehler üben ↗</button>
+                <button class="new-run-button" id="new-run-button" type="button">neu mischen ↗</button>
+              </div>
             </div>
           </article>
         </section>
@@ -660,19 +842,27 @@
       const STORAGE_KEY = 'verb-cards-run-v2';
       const DIRECTIONS = ['german', 'present', 'past', 'mix'];
       const DIRECTION_LABELS = { present: 'GEGENWART', past: 'VERGANGENHEIT', german: 'DEUTSCH', mix: 'GEMISCHT' };
+      const VOCAB_SETS = [
+        { id: 'chapter-g', label: `kapitel G · seiten 215–217 · ${VERBS.length}`, indexes: VERBS.map((_, index) => index) }
+      ];
       const $ = (selector) => document.querySelector(selector);
       const $$ = (selector) => [...document.querySelectorAll(selector)];
 
       const state = {
         length: 20,
+        runSize: '20',
+        setId: 'chapter-g',
         direction: 'german',
         queue: [],
         position: 0,
         current: null,
         currentMode: 'present',
+        speechForm: 'infinitive',
         locked: false,
         correct: 0,
         wrong: 0,
+        mistakes: [],
+        isReviewRun: false,
         progress: loadProgress()
       };
 
@@ -700,16 +890,26 @@
         return copy;
       }
 
-      function uniqueVerbIndexes() {
+      function uniqueVerbIndexes(indexes = VERBS.map((_, index) => index)) {
         const seen = new Set();
-        return VERBS.reduce((indexes, verb, index) => {
+        return indexes.reduce((uniqueIndexes, index) => {
+          const verb = VERBS[index];
+          if (!verb) return uniqueIndexes;
           const key = verb.infinitive.trim().toLocaleLowerCase();
           if (!seen.has(key)) {
             seen.add(key);
-            indexes.push(index);
+            uniqueIndexes.push(index);
           }
-          return indexes;
+          return uniqueIndexes;
         }, []);
+      }
+
+      function selectedVocabSet() {
+        return VOCAB_SETS.find((set) => set.id === state.setId) || VOCAB_SETS[0];
+      }
+
+      function cancelSpeech() {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       }
 
       function modeForCard() {
@@ -717,16 +917,26 @@
         return DIRECTIONS[Math.floor(Math.random() * 3)];
       }
 
-      function startRun(length = state.length) {
-        state.queue = shuffle(uniqueVerbIndexes()).slice(0, length);
+      function startRun(runSize = state.runSize, sourceIndexes = null, isReviewRun = false) {
+        const availableIndexes = uniqueVerbIndexes(sourceIndexes || selectedVocabSet().indexes);
+        const requestedRunSize = isReviewRun ? 'all' : String(runSize);
+        const requestedLength = requestedRunSize === 'all'
+          ? availableIndexes.length
+          : Math.min(Number(requestedRunSize), availableIndexes.length);
+
+        if (!isReviewRun) state.runSize = requestedRunSize;
+        state.isReviewRun = isReviewRun;
+        state.queue = shuffle(availableIndexes).slice(0, requestedLength);
         state.length = state.queue.length;
         state.position = 0;
         state.correct = 0;
         state.wrong = 0;
+        state.mistakes = [];
         state.locked = false;
+        cancelSpeech();
         $('#finish-card').hidden = true;
         $('#learning-card').hidden = false;
-        $$('.run-size').forEach((button) => button.classList.toggle('active', Number(button.dataset.length) === length));
+        $$('.run-size').forEach((button) => button.classList.toggle('active', !state.isReviewRun && button.dataset.length === state.runSize));
         renderCard(false);
         updateRunline();
       }
@@ -737,15 +947,103 @@
         $('#score-total').textContent = state.length;
       }
 
+      function visibleEnglishText() {
+        if (!state.current) return '';
+        const isFlipped = $('#learning-card').classList.contains('is-flipped');
+        if (!isFlipped && state.currentMode === 'german') return '';
+        if (isFlipped) return state.currentMode === 'present' ? state.current.simplePast : state.current.infinitive;
+        return state.currentMode === 'past' ? state.current.simplePast : state.current.infinitive;
+      }
+
+      function updateSpeakButton() {
+        const isEnglishSide = Boolean(visibleEnglishText());
+        const text = state.speechForm === 'infinitive' ? state.current?.infinitive : state.current?.simplePast;
+        $('#speak-button').hidden = !isEnglishSide;
+        if (isEnglishSide && text) {
+          const form = state.speechForm === 'infinitive' ? 'Infinitiv' : 'Simple Past';
+          $('#speak-button').setAttribute('aria-label', `${text}, ${form} vorlesen`);
+        }
+      }
+
       function setFlipped(flipped) {
         $('#learning-card').classList.toggle('is-flipped', flipped);
         $('#flashcard').setAttribute('aria-pressed', String(flipped));
         $('#card-actions').hidden = !flipped;
+        updateSpeakButton();
+      }
+
+      function createUtterance(text, lang) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.rate = 0.84;
+        const voices = window.speechSynthesis.getVoices();
+        utterance.voice = voices.find((voice) => voice.lang.toLowerCase() === lang.toLowerCase())
+          || voices.find((voice) => voice.lang.toLowerCase().startsWith('en'))
+          || null;
+        return utterance;
+      }
+
+      function speakText(text, lang = 'en-GB') {
+        if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
+        cancelSpeech();
+        window.speechSynthesis.speak(createUtterance(text, lang));
+      }
+
+      function speakCurrent() {
+        if (!visibleEnglishText() || !state.current) return;
+        const spokenForm = state.speechForm;
+        const text = spokenForm === 'infinitive' ? state.current.infinitive : state.current.simplePast;
+        highlightSpokenWord(spokenForm);
+        speakText(text, 'en-GB');
+        state.speechForm = state.speechForm === 'infinitive' ? 'past' : 'infinitive';
+        updateSpeakButton();
+      }
+
+      function highlightSpokenWord(form) {
+        $$('.spoken-word').forEach((element) => element.classList.remove('spoken-word'));
+        const formElement = form === 'infinitive' ? $('#back-infinitive') : $('#back-past');
+        formElement.classList.add('spoken-word');
+      }
+
+      function renderMistakeList() {
+        const list = $('#mistake-list');
+        list.replaceChildren();
+        state.mistakes.forEach((index) => {
+          const verb = VERBS[index];
+          if (!verb) return;
+
+          const item = document.createElement('div');
+          item.className = 'mistake-item';
+
+          const word = document.createElement('div');
+          word.className = 'mistake-word';
+          const infinitive = document.createElement('strong');
+          infinitive.textContent = verb.infinitive;
+          const details = document.createElement('span');
+          details.textContent = `${verb.simplePast} · ${verb.german}`;
+          word.append(infinitive, details);
+
+          const speakButton = document.createElement('button');
+          speakButton.className = 'mini-speak';
+          speakButton.type = 'button';
+          speakButton.setAttribute('aria-label', `${verb.infinitive} vorlesen`);
+          speakButton.textContent = '🔊';
+          speakButton.addEventListener('click', () => speakText(`${verb.infinitive}. ${verb.simplePast}`, 'en-GB'));
+
+          item.append(word, speakButton);
+          list.append(item);
+        });
+
+        const mistakeCount = state.mistakes.length;
+        $('#mistake-count').textContent = `${mistakeCount} ${mistakeCount === 1 ? 'fehler' : 'fehler'}`;
+        $('#mistake-panel').hidden = mistakeCount === 0;
       }
 
       function renderCard(animate = true) {
+        $$('.spoken-word').forEach((element) => element.classList.remove('spoken-word'));
         state.current = VERBS[state.queue[state.position]];
         state.currentMode = modeForCard();
+        state.speechForm = 'infinitive';
         state.locked = false;
         const mode = state.currentMode;
         const isPresent = mode === 'present';
@@ -784,7 +1082,11 @@
         if (state.locked) return;
         state.locked = true;
         if (isCorrect) state.correct += 1;
-        else state.wrong += 1;
+        else {
+          state.wrong += 1;
+          const currentIndex = state.queue[state.position];
+          if (!state.mistakes.includes(currentIndex)) state.mistakes.push(currentIndex);
+        }
         updateRunline();
         nextCard();
       }
@@ -796,15 +1098,19 @@
       }
 
       function finishRun() {
-        const isFirstRun = state.progress.runs === 0;
-        state.progress.runs += 1;
-        const currentRate = state.correct / state.length;
-        const bestRate = state.progress.best / state.progress.bestLength;
-        if (isFirstRun || currentRate > bestRate || (currentRate === bestRate && state.correct > state.progress.best)) {
-          state.progress.best = state.correct;
-          state.progress.bestLength = state.length;
+        const isReviewRun = state.isReviewRun;
+        if (!isReviewRun) {
+          const isFirstRun = state.progress.runs === 0;
+          state.progress.runs += 1;
+          const currentRate = state.correct / state.length;
+          const bestRate = state.progress.best / state.progress.bestLength;
+          if (isFirstRun || currentRate > bestRate || (currentRate === bestRate && state.correct > state.progress.best)) {
+            state.progress.best = state.correct;
+            state.progress.bestLength = state.length;
+          }
         }
         saveProgress();
+        cancelSpeech();
         $('#learning-card').hidden = true;
         $('#finish-card').hidden = false;
         $('#finish-correct').textContent = state.correct;
@@ -812,8 +1118,20 @@
         $('#finish-percent').textContent = `${Math.round((state.correct / state.length) * 100)}%`;
         $('#finish-best').textContent = `${state.progress.best} / ${state.progress.bestLength}`;
         $('#finish-runs').textContent = state.progress.runs;
-        $('#finish-message').textContent = state.correct === state.length ? 'komplett sauber · neue reihenfolge bereit.' : 'runde gespeichert · die fehler kommen nicht verloren.';
+        renderMistakeList();
+        $('#review-button').hidden = state.mistakes.length === 0;
+        $('#finish-message').textContent = state.mistakes.length === 0
+          ? 'komplett sauber · neue reihenfolge bereit.'
+          : `${state.mistakes.length} ${state.mistakes.length === 1 ? 'fehler' : 'fehler'} · direkt nochmal üben?`;
+        $('#finish-footer-text').textContent = state.mistakes.length === 0
+          ? 'Die Karten werden für den nächsten Lauf neu gemischt.'
+          : 'Diese Vokabeln stehen oben zum Nacharbeiten bereit.';
         updateRunline();
+      }
+
+      function startReviewRun() {
+        if (!state.mistakes.length) return;
+        startRun('all', [...state.mistakes], true);
       }
 
       function changeDirection() {
@@ -824,11 +1142,24 @@
       }
 
       $('#flashcard').addEventListener('click', flipCard);
+      $('#flashcard').addEventListener('keydown', (event) => {
+        if ((event.key === 'Enter' || event.key === ' ') && event.target === $('#flashcard')) {
+          event.preventDefault();
+          flipCard();
+        }
+      });
+      $('#speak-button').addEventListener('click', speakCurrent);
       $('#again-button').addEventListener('click', () => rateCard(false));
       $('#right-button').addEventListener('click', () => rateCard(true));
-      $('#new-run-button').addEventListener('click', () => startRun(state.length));
+      $('#review-button').addEventListener('click', startReviewRun);
+      $('#new-run-button').addEventListener('click', () => startRun(state.runSize));
       $('#direction-button').addEventListener('click', changeDirection);
-      $$('.run-size').forEach((button) => button.addEventListener('click', () => startRun(Number(button.dataset.length))));
+      $$('.run-size').forEach((button) => button.addEventListener('click', () => startRun(button.dataset.length)));
+
+      if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+        $('#speak-button').disabled = true;
+        $('#speak-button').title = 'Sprachausgabe wird von diesem Browser nicht unterstützt';
+      }
 
       document.addEventListener('keydown', (event) => {
         if ((event.key === 'Enter' || event.key === ' ') && event.target === document.body) {
@@ -837,7 +1168,7 @@
         }
       });
 
-      startRun(20);
+      startRun('20');
     </script>
   </body>
 </html>
