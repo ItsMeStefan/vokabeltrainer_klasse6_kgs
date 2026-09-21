@@ -18,9 +18,10 @@ from piper import PiperVoice, SynthesisConfig
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "index.html"
 DEFAULT_OUTPUT = ROOT / "audio" / "tts"
-LEADING_AUDIO_FILTER = (
-    "silenceremove=start_periods=1:start_duration=0.05:start_threshold=0.01"
-)
+LEADING_PREROLL_MS = 80
+ONSET_FRAME_MS = 10
+ONSET_THRESHOLD_RATIO = 0.025
+ONSET_CONFIRM_FRAMES = 2
 
 # A few consonant/vowel contrasts are too easy to lose in isolated words.
 # These explicit phonemes keep the learner-facing forms distinguishable while
@@ -104,6 +105,47 @@ def write_wav(voice: PiperVoice, text: str, speaker: int, path: Path) -> None:
             wav_file.writeframes(chunk.audio_int16_bytes)
 
 
+def trim_leading_preroll(path: Path) -> None:
+    """Keep a short natural lead-in while removing long low-level pre-roll."""
+    with wave.open(str(path), "rb") as wav_file:
+        params = wav_file.getparams()
+        frames = wav_file.readframes(params.nframes)
+
+    if params.sampwidth != 2 or not frames:
+        return
+
+    samples = np.frombuffer(frames, dtype=np.int16)
+    if params.nchannels > 1:
+        samples = samples.reshape(-1, params.nchannels).mean(axis=1)
+
+    frame_size = max(1, round(params.framerate * ONSET_FRAME_MS / 1000))
+    frame_count = len(samples) // frame_size
+    if frame_count == 0:
+        return
+
+    analysis = samples[:frame_count * frame_size].astype(np.float32)
+    rms = np.sqrt(np.mean(analysis.reshape(frame_count, frame_size) ** 2, axis=1))
+    threshold = max(float(np.max(np.abs(samples))), 1.0) * ONSET_THRESHOLD_RATIO
+    onset_frame = None
+    for index in range(0, len(rms) - ONSET_CONFIRM_FRAMES + 1):
+        if np.all(rms[index:index + ONSET_CONFIRM_FRAMES] > threshold):
+            onset_frame = index
+            break
+
+    if onset_frame is None:
+        return
+
+    preroll_samples = round(params.framerate * LEADING_PREROLL_MS / 1000)
+    start_sample = max(0, onset_frame * frame_size - preroll_samples)
+    start_sample *= params.nchannels
+    if start_sample <= 0:
+        return
+
+    with wave.open(str(path), "wb") as wav_file:
+        wav_file.setparams(params)
+        wav_file.writeframes(frames[start_sample * params.sampwidth:])
+
+
 def generate_one(voice: PiperVoice, text: str, output_dir: Path, speaker: int) -> Path:
     output_path = output_dir / f"{audio_slug(text)}.mp3"
     if output_path.exists():
@@ -111,6 +153,7 @@ def generate_one(voice: PiperVoice, text: str, output_dir: Path, speaker: int) -
 
     with tempfile.NamedTemporaryFile(suffix=".wav") as wav_file:
         write_wav(voice, text, speaker, Path(wav_file.name))
+        trim_leading_preroll(Path(wav_file.name))
         subprocess.run(
             [
                 "ffmpeg",
@@ -120,8 +163,6 @@ def generate_one(voice: PiperVoice, text: str, output_dir: Path, speaker: int) -
                 "-y",
                 "-i",
                 wav_file.name,
-                "-af",
-                LEADING_AUDIO_FILTER,
                 "-codec:a",
                 "libmp3lame",
                 "-q:a",
