@@ -857,6 +857,7 @@
         position: 0,
         current: null,
         currentMode: 'present',
+        speechForm: 'infinitive',
         locked: false,
         correct: 0,
         wrong: 0,
@@ -996,7 +997,7 @@
       function speechFormsForCard() {
         if (!state.current) return [];
         const isFlipped = $('#learning-card').classList.contains('is-flipped');
-        if (isFlipped) return ['infinitive', 'past'];
+        if (isFlipped) return [state.speechForm];
         if (state.currentMode === 'present') return ['infinitive'];
         if (state.currentMode === 'past') return ['past'];
         return [];
@@ -1017,8 +1018,9 @@
         const isEnglishSide = forms.length > 0 && Boolean(visibleEnglishText());
         $('#speak-button').hidden = !isEnglishSide;
         if (isEnglishSide) {
-          const labels = forms.map((form) => form === 'infinitive' ? 'Infinitiv' : 'Simple Past');
-          $('#speak-button').setAttribute('aria-label', `${labels.join(' und ')} vorlesen`);
+          const form = forms[0];
+          const label = form === 'infinitive' ? 'Infinitiv' : 'Simple Past';
+          $('#speak-button').setAttribute('aria-label', `${label} vorlesen`);
         }
       }
 
@@ -1026,6 +1028,7 @@
         $('#learning-card').classList.toggle('is-flipped', flipped);
         $('#flashcard').setAttribute('aria-pressed', String(flipped));
         $('#card-actions').hidden = !flipped;
+        if (flipped) state.speechForm = 'infinitive';
         updateSpeakButton();
       }
 
@@ -1101,6 +1104,10 @@
         const audioParts = forms.flatMap(audioPartsForForm);
         highlightSpokenWords(forms);
         speakText(text, 'en-GB', audioParts);
+        if ($('#learning-card').classList.contains('is-flipped')) {
+          state.speechForm = state.speechForm === 'infinitive' ? 'past' : 'infinitive';
+          updateSpeakButton();
+        }
       }
 
       function highlightSpokenWords(forms) {
@@ -1153,6 +1160,7 @@
         $$('.spoken-word').forEach((element) => element.classList.remove('spoken-word'));
         state.current = VERBS[state.queue[state.position]];
         state.currentMode = modeForCard();
+        state.speechForm = 'infinitive';
         state.locked = false;
         const mode = state.currentMode;
         const isPresent = mode === 'present';
