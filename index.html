@@ -1028,7 +1028,6 @@
         $('#learning-card').classList.toggle('is-flipped', flipped);
         $('#flashcard').setAttribute('aria-pressed', String(flipped));
         $('#card-actions').hidden = !flipped;
-        if (flipped) state.speechForm = 'infinitive';
         updateSpeakButton();
       }
 
@@ -1104,10 +1103,8 @@
         const audioParts = forms.flatMap(audioPartsForForm);
         highlightSpokenWords(forms);
         speakText(text, 'en-GB', audioParts);
-        if ($('#learning-card').classList.contains('is-flipped')) {
-          state.speechForm = state.speechForm === 'infinitive' ? 'past' : 'infinitive';
-          updateSpeakButton();
-        }
+        state.speechForm = forms[0] === 'infinitive' ? 'past' : 'infinitive';
+        updateSpeakButton();
       }
 
       function highlightSpokenWords(forms) {
