@@ -857,7 +857,6 @@
         position: 0,
         current: null,
         currentMode: 'present',
-        speechForm: 'infinitive',
         locked: false,
         correct: 0,
         wrong: 0,
@@ -990,17 +989,36 @@
         if (!state.current) return '';
         const isFlipped = $('#learning-card').classList.contains('is-flipped');
         if (!isFlipped && state.currentMode === 'german') return '';
-        if (isFlipped) return state.currentMode === 'present' ? state.current.simplePast : state.current.infinitive;
+        if (isFlipped) return state.current.infinitive;
         return state.currentMode === 'past' ? state.current.simplePast : state.current.infinitive;
       }
 
+      function speechFormsForCard() {
+        if (!state.current) return [];
+        const isFlipped = $('#learning-card').classList.contains('is-flipped');
+        if (isFlipped) return ['infinitive', 'past'];
+        if (state.currentMode === 'present') return ['infinitive'];
+        if (state.currentMode === 'past') return ['past'];
+        return [];
+      }
+
+      function textForForm(form) {
+        return form === 'infinitive' ? state.current?.infinitive : state.current?.simplePast;
+      }
+
+      function audioPartsForForm(form) {
+        return speechParts(textForForm(form)).map((part) => (
+          form === 'past' && part === 'read' ? 'red' : part
+        ));
+      }
+
       function updateSpeakButton() {
-        const isEnglishSide = Boolean(visibleEnglishText());
-        const text = state.speechForm === 'infinitive' ? state.current?.infinitive : state.current?.simplePast;
+        const forms = speechFormsForCard();
+        const isEnglishSide = forms.length > 0 && Boolean(visibleEnglishText());
         $('#speak-button').hidden = !isEnglishSide;
-        if (isEnglishSide && text) {
-          const form = state.speechForm === 'infinitive' ? 'Infinitiv' : 'Simple Past';
-          $('#speak-button').setAttribute('aria-label', `${text}, ${form} vorlesen`);
+        if (isEnglishSide) {
+          const labels = forms.map((form) => form === 'infinitive' ? 'Infinitiv' : 'Simple Past');
+          $('#speak-button').setAttribute('aria-label', `${labels.join(' und ')} vorlesen`);
         }
       }
 
@@ -1077,20 +1095,20 @@
       }
 
       function speakCurrent() {
-        if (!visibleEnglishText() || !state.current) return;
-        const spokenForm = state.speechForm;
-        const text = spokenForm === 'infinitive' ? state.current.infinitive : state.current.simplePast;
-        highlightSpokenWord(spokenForm);
-        const audioText = spokenForm === 'past' && text === 'read' ? 'red' : text;
-        speakText(text, 'en-GB', audioText);
-        state.speechForm = state.speechForm === 'infinitive' ? 'past' : 'infinitive';
-        updateSpeakButton();
+        const forms = speechFormsForCard();
+        if (!forms.length || !state.current) return;
+        const text = forms.map(textForForm).join('. ');
+        const audioParts = forms.flatMap(audioPartsForForm);
+        highlightSpokenWords(forms);
+        speakText(text, 'en-GB', audioParts);
       }
 
-      function highlightSpokenWord(form) {
+      function highlightSpokenWords(forms) {
         $$('.spoken-word').forEach((element) => element.classList.remove('spoken-word'));
-        const formElement = form === 'infinitive' ? $('#back-infinitive') : $('#back-past');
-        formElement.classList.add('spoken-word');
+        forms.forEach((form) => {
+          const formElement = form === 'infinitive' ? $('#back-infinitive') : $('#back-past');
+          formElement.classList.add('spoken-word');
+        });
       }
 
       function renderMistakeList() {
@@ -1135,7 +1153,6 @@
         $$('.spoken-word').forEach((element) => element.classList.remove('spoken-word'));
         state.current = VERBS[state.queue[state.position]];
         state.currentMode = modeForCard();
-        state.speechForm = 'infinitive';
         state.locked = false;
         const mode = state.currentMode;
         const isPresent = mode === 'present';
