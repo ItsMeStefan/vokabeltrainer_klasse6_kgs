@@ -1,2 +1,6 @@
 .playwright-cli
 TODO.md
+.cache/
+audio/tts/test-*.mp3
+__pycache__/
+tools/__pycache__/

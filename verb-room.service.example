@@ -1,0 +1,15 @@
+[Unit]
+Description=Verb Room static vocabulary trainer
+After=network-online.target
+
+[Service]
+Type=simple
+# Replace this placeholder with the absolute path of your local clone.
+WorkingDirectory=/absolute/path/to/vokabeln
+ExecStart=/usr/bin/python3 -m http.server 16001 --bind 0.0.0.0
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target
