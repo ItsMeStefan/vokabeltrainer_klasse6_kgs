@@ -1028,6 +1028,9 @@
         $('#learning-card').classList.toggle('is-flipped', flipped);
         $('#flashcard').setAttribute('aria-pressed', String(flipped));
         $('#card-actions').hidden = !flipped;
+        if (flipped) {
+          state.speechForm = state.currentMode === 'present' ? 'past' : 'infinitive';
+        }
         updateSpeakButton();
       }
 
