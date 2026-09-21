@@ -23,6 +23,7 @@ DEFAULT_OUTPUT = ROOT / "audio" / "tts"
 # These explicit phonemes keep the learner-facing forms distinguishable while
 # retaining the same Aru speaker as the rest of the vocabulary.
 PHONEME_OVERRIDES = {
+    "build": ["b", "ˈ", "ɪ", "l", "d", "d", "."],
     "ran": ["ɹ", "ˈ", "æ", "ˑ", "n", "."],
     "stick": ["s", "t", "t", "ˈ", "ɪ", "k", "."],
     "stuck": ["s", "t", "t", "ˈ", "ʌ", "k", "."],
