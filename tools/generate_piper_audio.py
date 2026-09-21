@@ -18,6 +18,9 @@ from piper import PiperVoice, SynthesisConfig
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "index.html"
 DEFAULT_OUTPUT = ROOT / "audio" / "tts"
+LEADING_AUDIO_FILTER = (
+    "silenceremove=start_periods=1:start_duration=0.05:start_threshold=0.01"
+)
 
 # A few consonant/vowel contrasts are too easy to lose in isolated words.
 # These explicit phonemes keep the learner-facing forms distinguishable while
@@ -116,6 +119,8 @@ def generate_one(voice: PiperVoice, text: str, output_dir: Path, speaker: int) -
                 "-y",
                 "-i",
                 wav_file.name,
+                "-af",
+                LEADING_AUDIO_FILTER,
                 "-codec:a",
                 "libmp3lame",
                 "-q:a",

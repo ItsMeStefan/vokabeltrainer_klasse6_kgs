@@ -22,7 +22,7 @@ Die Anwendung ist komplett statisch und benötigt keinen Server und keine Datenb
 
 ## Sprachausgabe
 
-Die englischen Audiodateien werden mit dem lokal ausgeführten Modell **Piper**, der britischen Stimme `en_GB-aru-medium` und Sprecher 3 erzeugt. Die einzelnen Vokabeln werden mit einem Satzabschluss synthetisiert, damit auch Endkonsonanten wie das `t` in „went“ deutlich hörbar bleiben. Kommagetrennte Formen wie „smelt, smelled“ werden als einzelne MP3-Dateien gespeichert und beim Abspielen mit einer kurzen Pause nacheinander abgespielt. Die fertigen MP3-Dateien liegen unter `audio/tts/`; Besucher benötigen keine API und verursachen keine TTS-Kosten. Falls eine Audiodatei fehlt, fällt die Seite auf die Browser-Sprachausgabe zurück.
+Die englischen Audiodateien werden mit dem lokal ausgeführten Modell **Piper**, der britischen Stimme `en_GB-aru-medium` und Sprecher 3 erzeugt. Die einzelnen Vokabeln werden mit einem Satzabschluss synthetisiert, damit auch Endkonsonanten wie das `t` in „went“ deutlich hörbar bleiben. Beim Export wird sehr leiser Vorlauf am Anfang entfernt, damit die Stimme nicht erst hörbar einatmet. Kommagetrennte Formen wie „smelt, smelled“ werden als einzelne MP3-Dateien gespeichert und beim Abspielen mit einer kurzen Pause nacheinander abgespielt. Die fertigen MP3-Dateien liegen unter `audio/tts/`; Besucher benötigen keine API und verursachen keine TTS-Kosten. Falls eine Audiodatei fehlt, fällt die Seite auf die Browser-Sprachausgabe zurück.
 
 Zum erneuten Erzeugen oder Aktualisieren der Dateien werden `piper-tts` und `ffmpeg` benötigt. Stimme und Modell können so geladen und verwendet werden:
 
